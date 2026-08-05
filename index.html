@@ -143,6 +143,19 @@ h2 {
     padding: 18px;
     margin-bottom: 15px;
     box-shadow: 0 4px 15px rgba(0,0,0,.08);
+    transition: 0.3s;
+    border-left: 5px solid transparent;
+}
+
+/* ESTILOS PARA GASTOS PAGOS */
+.gasto.is-pago {
+    border-left-color: #27ae60;
+    background: #f4fdf8;
+}
+
+.gasto.is-pago .nome {
+    text-decoration: line-through;
+    color: #7f8c8d;
 }
 
 .topo {
@@ -150,15 +163,34 @@ h2 {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 12px;
+    gap: 10px;
+}
+
+.check-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: bold;
+    color: #555;
+    cursor: pointer;
+}
+
+.check-container input {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #27ae60;
 }
 
 .nome {
+    flex: 1;
     font-size: 18px;
     font-weight: bold;
     padding: 8px;
     border: none;
     border-bottom: 2px solid #ddd;
-    width: 55%;
+    background: transparent;
 }
 
 .nome:focus {
@@ -169,6 +201,7 @@ h2 {
 .porcentagem {
     font-size: 18px;
     font-weight: bold;
+    white-space: nowrap;
 }
 
 .inputs-gasto {
@@ -183,6 +216,7 @@ h2 {
     font-size: 18px;
     border-radius: 10px;
     border: 1px solid #ccc;
+    background: rgba(255,255,255,0.8);
 }
 
 .vezesInput {
@@ -192,6 +226,7 @@ h2 {
     border-radius: 10px;
     border: 1px solid #ccc;
     text-align: center;
+    background: rgba(255,255,255,0.8);
 }
 
 .barra {
@@ -257,6 +292,8 @@ h2 {
 @media(max-width: 600px) {
     .header { padding-top: 80px; }
     .backup-actions { top: 20px; right: 20px; }
+    .topo { flex-wrap: wrap; }
+    .nome { width: 100%; order: 3; margin-top: 10px; }
 }
 </style>
 </head>
@@ -301,12 +338,10 @@ h2 {
     <button class="add" onclick="novo()">+ Adicionar Gasto</button>
 </div>
 
-<!-- SCRIPTS DO FIREBASE VIA CDN -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
     import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
-    // Configuração com seus dados
     const firebaseConfig = {
         apiKey: "AIzaSyAvYi8dqXHfQaiBYOTyJB_5zcdrfIwtmr4",
         authDomain: "meu-controle-financeiro-73572.firebaseapp.com",
@@ -317,30 +352,22 @@ h2 {
         appId: "1:637028969692:web:1d6db2bd0120c8f6df1819"
     };
 
-    // Inicializar Firebase
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    
-    // SUA PASTA SECRETA CONFIGURADA AQUI:
     const dbRef = ref(db, 'rainerwollace'); 
 
     let dataBase = new Date();
     let anoAtual = dataBase.getFullYear();
     let mesAtual = dataBase.getMonth();
     
-    // Dados padrão caso o banco esteja vazio
     let dados = {
         salarios: {}, 
-        gastos: [
-            {nome: "🏠 Aluguel", valor: 0, vezes: 12, startAno: anoAtual, startMes: mesAtual},
-            {nome: "💡 Energia", valor: 0, vezes: 6, startAno: anoAtual, startMes: mesAtual}
-        ]
+        gastos: []
     };
 
     const salarioInput = document.getElementById("salario");
     let primeiraCargaFeita = false;
 
-    // ESCUTANDO DADOS EM TEMPO REAL DO FIREBASE
     onValue(dbRef, (snapshot) => {
         const val = snapshot.val();
         if (val) {
@@ -356,7 +383,6 @@ h2 {
         atualizar();
     });
 
-    // Função para salvar no Firebase
     function salvarNuvem() {
         document.getElementById("statusNuvem").innerText = "🔄 Salvando...";
         definirSalarioMes(parseFloat(salarioInput.value) || 0);
@@ -409,6 +435,7 @@ h2 {
         lista.innerHTML = "";
         let total = 0;
         let salarioValor = obterSalarioMes();
+        let chaveMesAtual = `${anoAtual}-${mesAtual}`;
 
         dados.gastos.forEach((g, i) => {
             let mesesPassados = calcularDiferencaMeses(anoAtual, mesAtual, g.startAno, g.startMes);
@@ -424,9 +451,17 @@ h2 {
             if(p > 20) cor = "#f1c40f";
             if(p > 40) cor = "#e74c3c";
 
+            // Verifica se este gasto está pago neste mês específico
+            let isPago = g.pagos && g.pagos[chaveMesAtual] ? true : false;
+            let classePago = isPago ? "is-pago" : "";
+
             lista.innerHTML += `
-            <div class="gasto">
+            <div class="gasto ${classePago}">
                 <div class="topo">
+                    <label class="check-container">
+                        <input type="checkbox" onchange="marcarPago(${i}, this.checked)" ${isPago ? 'checked' : ''}>
+                        Pago
+                    </label>
                     <input class="nome" data-index="${i}" data-campo="nome" value="${g.nome}" oninput="alterarNome(${i},this.value)">
                     <div class="porcentagem">${p.toFixed(1)}%</div>
                 </div>
@@ -468,7 +503,16 @@ h2 {
         }
     }
 
-    // Exportando funções para o ambiente global
+    // Função global para salvar status de pagamento do mês
+    window.marcarPago = function(i, checked) {
+        if (!dados.gastos[i].pagos) {
+            dados.gastos[i].pagos = {};
+        }
+        let chaveMesAtual = `${anoAtual}-${mesAtual}`;
+        dados.gastos[i].pagos[chaveMesAtual] = checked;
+        salvarNuvem();
+    };
+
     window.mudarMes = function(direcao) {
         let novaData = new Date(anoAtual, mesAtual + direcao, 1);
         anoAtual = novaData.getFullYear();
@@ -487,12 +531,12 @@ h2 {
             valor: 0,
             vezes: 1,
             startAno: anoAtual,
-            startMes: mesAtual
+            startMes: mesAtual,
+            pagos: {}
         });
         salvarNuvem();
     };
 
-    // Funções de Importar e Exportar
     window.exportarDados = function() {
         let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dados, null, 2));
         let downloadAnchor = document.createElement('a');
@@ -513,7 +557,7 @@ h2 {
                 let dadosImportados = JSON.parse(e.target.result);
                 if (dadosImportados.gastos && dadosImportados.salarios) {
                     dados = dadosImportados;
-                    salvarNuvem(); // Envia o backup offline direto para a nuvem
+                    salvarNuvem();
                     alert("Backup restaurado e sincronizado com a nuvem com sucesso!");
                 } else {
                     alert("Arquivo inválido. O formato dos dados não é compatível.");
