@@ -31,8 +31,43 @@ body {
     position: relative;
 }
 
-.header h1 {
+.titulo-container {
+    display: flex;
+    align-items: center;
+    gap: 15px;
     margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.status-nuvem {
+    font-size: 14px;
+    background: rgba(0, 0, 0, 0.1);
+    padding: 4px 10px;
+    border-radius: 20px;
+}
+
+.backup-actions {
+    position: absolute;
+    top: 25px;
+    right: 25px;
+    display: flex;
+    gap: 10px;
+}
+
+.btn-backup {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: 0.2s;
+}
+
+.btn-backup:hover {
+    background: rgba(255, 255, 255, 0.3);
 }
 
 .mes-seletor {
@@ -219,25 +254,26 @@ h2 {
     background: #0676c8;
 }
 
-.status-nuvem {
-    font-size: 12px;
-    color: white;
-    opacity: 0.8;
-    position: absolute;
-    top: 20px;
-    right: 20px;
-}
-
 @media(max-width: 600px) {
-    .header { padding-top: 60px; }
+    .header { padding-top: 80px; }
+    .backup-actions { top: 20px; right: 20px; }
 }
 </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <h1>💰 Controle Financeiro</h1>
-        <div class="status-nuvem" id="statusNuvem">⏳ Conectando...</div>
+        <div class="titulo-container">
+            <h1>💰 Controle Financeiro</h1>
+            <div class="status-nuvem" id="statusNuvem">⏳ Conectando...</div>
+        </div>
+        
+        <div class="backup-actions">
+            <button class="btn-backup" onclick="exportarDados()">📤 Exportar</button>
+            <button class="btn-backup" onclick="document.getElementById('importFile').click()">📥 Importar</button>
+            <input type="file" id="importFile" style="display:none" accept=".json" onchange="importarDados(this)">
+        </div>
+
         <div class="mes-seletor">
             <button onclick="mudarMes(-1)">◀</button>
             <span id="mesAtualLabel">Carregando...</span>
@@ -292,7 +328,7 @@ h2 {
     let anoAtual = dataBase.getFullYear();
     let mesAtual = dataBase.getMonth();
     
-    // Dados padrão caso o banco esteja vazio na primeira vez
+    // Dados padrão caso o banco esteja vazio
     let dados = {
         salarios: {}, 
         gastos: [
@@ -312,7 +348,6 @@ h2 {
             if (!dados.gastos) dados.gastos = [];
             if (!dados.salarios) dados.salarios = {};
         } else if (!primeiraCargaFeita) {
-            // Se o banco estiver vazio, envia os dados iniciais padrão
             set(dbRef, dados);
         }
         
@@ -351,12 +386,11 @@ h2 {
     }
 
     function atualizar() {
-        if (!primeiraCargaFeita) return; // Aguarda os dados chegarem da internet
+        if (!primeiraCargaFeita) return; 
 
         const mesesNome = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
         document.getElementById("mesAtualLabel").innerText = `${mesesNome[mesAtual]} de ${anoAtual}`;
 
-        // Previne sobrescrever o foco de quem está digitando
         if (document.activeElement !== salarioInput) {
             salarioInput.value = obterSalarioMes();
         }
@@ -422,7 +456,6 @@ h2 {
         document.getElementById("percentual").innerHTML = perc.toFixed(1) + "%";
         document.getElementById("saldo").style.color = saldo >= 0 ? "#27ae60" : "#e74c3c";
 
-        // Devolve o foco ao campo correto caso o usuário esteja digitando rápido
         if (focoIndex !== null) {
             let seletor = `[data-index="${focoIndex}"][data-campo="${focoCampo}"]`;
             let campo = lista.querySelector(seletor);
@@ -435,7 +468,7 @@ h2 {
         }
     }
 
-    // Exportando funções para o ambiente global para funcionarem com onclick do HTML
+    // Exportando funções para o ambiente global
     window.mudarMes = function(direcao) {
         let novaData = new Date(anoAtual, mesAtual + direcao, 1);
         anoAtual = novaData.getFullYear();
@@ -443,25 +476,10 @@ h2 {
         atualizar();
     };
 
-    window.alterarNome = function(i, v) {
-        dados.gastos[i].nome = v;
-        salvarNuvem();
-    };
-
-    window.alterarValor = function(i, v) {
-        dados.gastos[i].valor = parseFloat(v) || 0;
-        salvarNuvem();
-    };
-
-    window.alterarVezes = function(i, v) {
-        dados.gastos[i].vezes = parseInt(v) || 1;
-        salvarNuvem();
-    };
-
-    window.remover = function(i) {
-        dados.gastos.splice(i, 1);
-        salvarNuvem();
-    };
+    window.alterarNome = function(i, v) { dados.gastos[i].nome = v; salvarNuvem(); };
+    window.alterarValor = function(i, v) { dados.gastos[i].valor = parseFloat(v) || 0; salvarNuvem(); };
+    window.alterarVezes = function(i, v) { dados.gastos[i].vezes = parseInt(v) || 1; salvarNuvem(); };
+    window.remover = function(i) { dados.gastos.splice(i, 1); salvarNuvem(); };
 
     window.novo = function() {
         dados.gastos.push({
@@ -472,6 +490,40 @@ h2 {
             startMes: mesAtual
         });
         salvarNuvem();
+    };
+
+    // Funções de Importar e Exportar
+    window.exportarDados = function() {
+        let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dados, null, 2));
+        let downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", "backup_controle_financeiro.json");
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    };
+
+    window.importarDados = function(input) {
+        let file = input.files[0];
+        if (!file) return;
+        
+        let reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                let dadosImportados = JSON.parse(e.target.result);
+                if (dadosImportados.gastos && dadosImportados.salarios) {
+                    dados = dadosImportados;
+                    salvarNuvem(); // Envia o backup offline direto para a nuvem
+                    alert("Backup restaurado e sincronizado com a nuvem com sucesso!");
+                } else {
+                    alert("Arquivo inválido. O formato dos dados não é compatível.");
+                }
+            } catch (err) {
+                alert("Erro ao ler o arquivo. Certifique-se de que é um arquivo .json válido.");
+            }
+        };
+        reader.readAsText(file);
+        input.value = ''; 
     };
 </script>
 </body>
