@@ -1,0 +1,237 @@
+{
+  "salarios": {
+    "2026-7": 1620,
+    "2026-6": 0,
+    "2026-8": 1620,
+    "2026-9": 1620,
+    "2026-10": 1620,
+    "2026-11": 1620,
+    "2027-0": 1620
+  },
+  "gastos": [
+    {
+      "nome": "FATURA GERLAINE",
+      "valor": 100,
+      "vezes": 1,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "EMPRESTIMO NUBANK GERLAINE",
+      "valor": 134.76,
+      "vezes": 1,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "EMPRESTIMO NUBANK GERLAINE 2",
+      "valor": 107.03,
+      "vezes": 4,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "ACADEMIA",
+      "valor": 100,
+      "vezes": 4,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "JEITTO",
+      "valor": 660.71,
+      "vezes": 1,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "MERCADO LIVRE 1",
+      "valor": 20.57,
+      "vezes": 1,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "MERCADO LIVRE 2",
+      "valor": 148.42,
+      "vezes": 1,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "MERCADO LIVRE 3",
+      "valor": 9.61,
+      "vezes": 1,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "MERCADO LIVRE 4",
+      "valor": 43.29,
+      "vezes": 2,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "MERCADO LIVRE 5",
+      "valor": 3.6,
+      "vezes": 2,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "MERCADO LIVRE 6",
+      "valor": 32.71,
+      "vezes": 3,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "MERCADO LIVRE 7",
+      "valor": 4.09,
+      "vezes": 3,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "DIGIO 1",
+      "valor": 19.1,
+      "vezes": 1,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "DIGIO 2",
+      "valor": 25.35,
+      "vezes": 2,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "DIGIO 3",
+      "valor": 68.26,
+      "vezes": 7,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "BIPLAY ",
+      "valor": 264.01,
+      "vezes": 1,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "FACIO",
+      "valor": 535.5,
+      "vezes": 1,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "NEGOCIAÇÃO NUBANK RAINER",
+      "valor": 65.33,
+      "vezes": 20,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "SHOPEE 1",
+      "valor": 25.01,
+      "vezes": 2,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "SHOPEE 2",
+      "valor": 18.73,
+      "vezes": 11,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "SHOPEE 3",
+      "valor": 18.2,
+      "vezes": 8,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "SHOPEE 4",
+      "valor": 6.89,
+      "vezes": 11,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "SHOPEE 5",
+      "valor": 13.63,
+      "vezes": 7,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "SHOPEE 6",
+      "valor": 36.25,
+      "vezes": 8,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "SHOPEE 7",
+      "valor": 6.72,
+      "vezes": 11,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "SHOPEE 8",
+      "valor": 22.75,
+      "vezes": 11,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "CASTRAÇÃO DE CHICO",
+      "valor": 107,
+      "vezes": 3,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "INTERNET",
+      "valor": 30,
+      "vezes": 12,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "PICPAY NEGOCIAÇÃO",
+      "valor": 52.24,
+      "vezes": 28,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "COREN",
+      "valor": 76,
+      "vezes": 3,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "REMEDIOS ",
+      "valor": 48,
+      "vezes": 1,
+      "startAno": 2026,
+      "startMes": 7
+    },
+    {
+      "nome": "SUPER SIM EMPRESTIMO",
+      "valor": 138.71,
+      "vezes": 4,
+      "startAno": 2026,
+      "startMes": 7
+    }
+  ]
+}
