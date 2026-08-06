@@ -330,7 +330,6 @@ h2 {
     background: #0676c8;
 }
 
-/* Estilização das Caixas de Busca */
 .search-box {
     background: white;
     padding: 20px;
@@ -415,16 +414,16 @@ h2 {
     <div id="tab-mensal" class="tab-content active">
         <div class="cards">
             <div class="card">
-                <h3>Saldo</h3>
+                <h3>Saldo Disponível</h3>
                 <div class="valor" id="saldo">R$ 0,00</div>
             </div>
             <div class="card">
-                <h3>Total Gasto</h3>
+                <h3>Falta Pagar</h3>
                 <div class="valor" id="gasto">R$ 0,00</div>
             </div>
             <div class="card">
-                <h3>Utilizado</h3>
-                <div class="valor" id="percentual">0%</div>
+                <h3>Já Pago</h3>
+                <div class="valor" id="percentual">R$ 0,00</div>
             </div>
         </div>
 
@@ -541,7 +540,6 @@ h2 {
         return (anoF - anoI) * 12 + (mesF - mesI);
     }
 
-    // Função de trocar abas
     window.switchTab = function(event, tabId) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -559,7 +557,6 @@ h2 {
         atualizar();
     };
 
-    // Lógica da Linha do Tempo para o Gráfico
     function obterLinhaDoTempo(filtroTexto = "") {
         let mesesSet = new Set();
         Object.keys(dados.salarios).forEach(key => mesesSet.add(key));
@@ -705,7 +702,9 @@ h2 {
         }
 
         lista.innerHTML = "";
-        let total = 0;
+        let totalGasto = 0;
+        let totalPago = 0;
+        let totalPendente = 0;
         let salarioValor = obterSalarioMes();
         let chaveMesAtual = `${anoAtual}-${mesAtual}`;
         let filtroMensal = document.getElementById("searchMensal") ? document.getElementById("searchMensal").value.toLowerCase() : "";
@@ -718,15 +717,24 @@ h2 {
 
             if (filtroMensal && !g.nome.toLowerCase().includes(filtroMensal)) return;
 
-            total += Number(g.valor);
+            let valorNum = Number(g.valor);
+            totalGasto += valorNum;
+
+            let isPago = g.pagos && g.pagos[chaveMesAtual] ? true : false;
+            
+            if (isPago) {
+                totalPago += valorNum;
+            } else {
+                totalPendente += valorNum;
+            }
+
             let p = 0;
-            if(salarioValor > 0) p = ((g.valor / salarioValor) * 100);
+            if(salarioValor > 0) p = ((valorNum / salarioValor) * 100);
 
             let cor = "#2ecc71";
             if(p > 20) cor = "#f1c40f";
             if(p > 40) cor = "#e74c3c";
 
-            let isPago = g.pagos && g.pagos[chaveMesAtual] ? true : false;
             let classePago = isPago ? "is-pago" : "";
 
             lista.innerHTML += `
@@ -748,7 +756,7 @@ h2 {
                 </div>
                 <div class="footer">
                     <div class="valorTexto">
-                        ${moeda(Number(g.valor))}
+                        ${moeda(valorNum)}
                         <span class="parcela-tag">Mês ${parcelaAtual} de ${g.vezes}x (Restam ${g.vezes - parcelaAtual})</span>
                     </div>
                     <button class="excluir" onclick="remover(${i})">Excluir</button>
@@ -756,14 +764,12 @@ h2 {
             </div>`;
         });
 
-        let saldo = salarioValor - total;
-        let perc = 0;
-        if(salarioValor > 0) perc = (total / salarioValor) * 100;
+        let saldoDisponivel = salarioValor - totalPago;
 
-        document.getElementById("saldo").innerHTML = moeda(saldo);
-        document.getElementById("gasto").innerHTML = moeda(total);
-        document.getElementById("percentual").innerHTML = perc.toFixed(1) + "%";
-        document.getElementById("saldo").style.color = saldo >= 0 ? "#27ae60" : "#e74c3c";
+        document.getElementById("saldo").innerHTML = moeda(saldoDisponivel);
+        document.getElementById("gasto").innerHTML = moeda(totalPendente);
+        document.getElementById("percentual").innerHTML = moeda(totalPago);
+        document.getElementById("saldo").style.color = saldoDisponivel >= 0 ? "#27ae60" : "#e74c3c";
 
         if (focoIndex !== null) {
             let seletor = `[data-index="${focoIndex}"][data-campo="${focoCampo}"]`;
@@ -789,6 +795,7 @@ h2 {
         let chaveMesAtual = `${anoAtual}-${mesAtual}`;
         dados.gastos[i].pagos[chaveMesAtual] = checked;
         salvarNuvem();
+        atualizar();
     };
 
     window.mudarMes = function(direcao) {
@@ -850,4 +857,3 @@ h2 {
 </script>
 </body>
 </html>
-
