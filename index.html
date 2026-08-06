@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Controle Financeiro Parcelado na Nuvem</title>
-<!-- Inclusão do Chart.js para renderização do gráfico -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 * {
@@ -148,7 +147,7 @@ body {
 
 .cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 15px;
     margin-top: 20px;
 }
@@ -163,16 +162,18 @@ body {
 .card h3 {
     color: #888;
     margin-bottom: 10px;
+    font-size: 14px;
 }
 
 .valor {
-    font-size: 28px;
+    font-size: 24px;
     font-weight: bold;
 }
 
 #saldo, #saldoTotalGeral { color: #27ae60; }
-#gasto, #gastoTotalGeral { color: #e74c3c; }
-#percentual, #receitaTotalGeral { color: #3498db; }
+#totalGastoCard { color: #636e72; }
+#faltaPagarCard { color: #e74c3c; }
+#jaPagoCard, #receitaTotalGeral { color: #0984e3; }
 
 h2 {
     margin: 25px 0 15px;
@@ -188,7 +189,6 @@ h2 {
     border-left: 5px solid transparent;
 }
 
-/* ESTILOS PARA GASTOS PAGOS */
 .gasto.is-pago {
     border-left-color: #27ae60;
     background: #f4fdf8;
@@ -414,16 +414,20 @@ h2 {
     <div id="tab-mensal" class="tab-content active">
         <div class="cards">
             <div class="card">
-                <h3>Saldo Disponível</h3>
+                <h3>Saldo Livre (Salário - Pago)</h3>
                 <div class="valor" id="saldo">R$ 0,00</div>
             </div>
             <div class="card">
-                <h3>Falta Pagar</h3>
-                <div class="valor" id="gasto">R$ 0,00</div>
+                <h3>Total de Gastos</h3>
+                <div class="valor" id="totalGastoCard">R$ 0,00</div>
+            </div>
+            <div class="card">
+                <h3>Falta Pagar (Pendente)</h3>
+                <div class="valor" id="faltaPagarCard">R$ 0,00</div>
             </div>
             <div class="card">
                 <h3>Já Pago</h3>
-                <div class="valor" id="percentual">R$ 0,00</div>
+                <div class="valor" id="jaPagoCard">R$ 0,00</div>
             </div>
         </div>
 
@@ -533,7 +537,14 @@ h2 {
     }
 
     function moeda(v) {
-        return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+        return (Number(v) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    }
+
+    function converterParaNumero(valor) {
+        if (typeof valor === 'number') return valor;
+        if (!valor) return 0;
+        let limpo = String(valor).replace(',', '.');
+        return parseFloat(limpo) || 0;
     }
 
     function calcularDiferencaMeses(anoF, mesF, anoI, mesI) {
@@ -595,7 +606,7 @@ h2 {
                 let mesesPassados = (ano - g.startAno) * 12 + (mes - g.startMes);
                 if (mesesPassados >= 0 && mesesPassados < g.vezes) {
                     if (!filtroTexto || g.nome.toLowerCase().includes(filtroTexto.toLowerCase())) {
-                        totalGastoMes += Number(g.valor);
+                        totalGastoMes += converterParaNumero(g.valor);
                     }
                 }
             });
@@ -717,10 +728,10 @@ h2 {
 
             if (filtroMensal && !g.nome.toLowerCase().includes(filtroMensal)) return;
 
-            let valorNum = Number(g.valor);
+            let valorNum = converterParaNumero(g.valor);
             totalGasto += valorNum;
 
-            let isPago = g.pagos && g.pagos[chaveMesAtual] ? true : false;
+            let isPago = (g.pagos && typeof g.pagos === 'object' && g.pagos[chaveMesAtual]) ? true : false;
             
             if (isPago) {
                 totalPago += valorNum;
@@ -767,8 +778,9 @@ h2 {
         let saldoDisponivel = salarioValor - totalPago;
 
         document.getElementById("saldo").innerHTML = moeda(saldoDisponivel);
-        document.getElementById("gasto").innerHTML = moeda(totalPendente);
-        document.getElementById("percentual").innerHTML = moeda(totalPago);
+        document.getElementById("totalGastoCard").innerHTML = moeda(totalGasto);
+        document.getElementById("faltaPagarCard").innerHTML = moeda(totalPendente);
+        document.getElementById("jaPagoCard").innerHTML = moeda(totalPago);
         document.getElementById("saldo").style.color = saldoDisponivel >= 0 ? "#27ae60" : "#e74c3c";
 
         if (focoIndex !== null) {
@@ -789,7 +801,7 @@ h2 {
     }
 
     window.marcarPago = function(i, checked) {
-        if (!dados.gastos[i].pagos) {
+        if (!dados.gastos[i].pagos || typeof dados.gastos[i].pagos !== 'object') {
             dados.gastos[i].pagos = {};
         }
         let chaveMesAtual = `${anoAtual}-${mesAtual}`;
@@ -806,7 +818,7 @@ h2 {
     };
 
     window.alterarNome = function(i, v) { dados.gastos[i].nome = v; salvarNuvem(); };
-    window.alterarValor = function(i, v) { dados.gastos[i].valor = parseFloat(v) || 0; salvarNuvem(); };
+    window.alterarValor = function(i, v) { dados.gastos[i].valor = converterParaNumero(v); salvarNuvem(); };
     window.alterarVezes = function(i, v) { dados.gastos[i].vezes = parseInt(v) || 1; salvarNuvem(); };
     window.remover = function(i) { dados.gastos.splice(i, 1); salvarNuvem(); };
 
