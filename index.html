@@ -573,7 +573,8 @@ h2 {
         Object.keys(dados.salarios).forEach(key => mesesSet.add(key));
 
         dados.gastos.forEach(g => {
-            for (let i = 0; i < g.vezes; i++) {
+            let vezesNum = parseInt(g.vezes) || 1;
+            for (let i = 0; i < vezesNum; i++) {
                 let m = g.startMes + i;
                 let a = g.startAno + Math.floor(m / 12);
                 let mesMod = m % 12;
@@ -603,8 +604,9 @@ h2 {
 
             let totalGastoMes = 0;
             dados.gastos.forEach(g => {
+                let vezesNum = parseInt(g.vezes) || 1;
                 let mesesPassados = (ano - g.startAno) * 12 + (mes - g.startMes);
-                if (mesesPassados >= 0 && mesesPassados < g.vezes) {
+                if (mesesPassados >= 0 && mesesPassados < vezesNum) {
                     if (!filtroTexto || g.nome.toLowerCase().includes(filtroTexto.toLowerCase())) {
                         totalGastoMes += converterParaNumero(g.valor);
                     }
@@ -708,8 +710,10 @@ h2 {
         if (ativo && ativo.dataset && ativo.dataset.index !== undefined) {
             focoIndex = ativo.dataset.index;
             focoCampo = ativo.dataset.campo;
-            selStart = ativo.selectionStart;
-            selEnd = ativo.selectionEnd;
+            try {
+                selStart = ativo.selectionStart;
+                selEnd = ativo.selectionEnd;
+            } catch(e) {}
         }
 
         lista.innerHTML = "";
@@ -721,10 +725,11 @@ h2 {
         let filtroMensal = document.getElementById("searchMensal") ? document.getElementById("searchMensal").value.toLowerCase() : "";
 
         dados.gastos.forEach((g, i) => {
+            let vezesNum = parseInt(g.vezes) || 1;
             let mesesPassados = calcularDiferencaMeses(anoAtual, mesAtual, g.startAno, g.startMes);
             let parcelaAtual = mesesPassados + 1;
 
-            if (mesesPassados < 0 || parcelaAtual > g.vezes) return; 
+            if (mesesPassados < 0 || parcelaAtual > vezesNum) return; 
 
             if (filtroMensal && !g.nome.toLowerCase().includes(filtroMensal)) return;
 
@@ -747,6 +752,8 @@ h2 {
             if(p > 40) cor = "#e74c3c";
 
             let classePago = isPago ? "is-pago" : "";
+            let valorExibicao = (g.valor !== undefined && g.valor !== null) ? g.valor : "";
+            let vezesExibicao = (g.vezes !== undefined && g.vezes !== null) ? g.vezes : 1;
 
             lista.innerHTML += `
             <div class="gasto ${classePago}">
@@ -759,8 +766,8 @@ h2 {
                     <div class="porcentagem">${p.toFixed(1)}%</div>
                 </div>
                 <div class="inputs-gasto">
-                    <input class="valorInput" data-index="${i}" data-campo="valor" type="number" step="0.01" placeholder="Valor R$" value="${g.valor}" oninput="alterarValor(${i},this.value)">
-                    <input class="vezesInput" data-index="${i}" data-campo="vezes" type="number" min="1" placeholder="Repetições (x)" value="${g.vezes}" oninput="alterarVezes(${i},this.value)">
+                    <input class="valorInput" data-index="${i}" data-campo="valor" type="text" inputmode="decimal" placeholder="Valor R$" value="${valorExibicao}" oninput="alterarValor(${i},this.value)">
+                    <input class="vezesInput" data-index="${i}" data-campo="vezes" type="text" inputmode="numeric" placeholder="Repetições (x)" value="${vezesExibicao}" oninput="alterarVezes(${i},this.value)">
                 </div>
                 <div class="barra">
                     <div class="preenchimento" style="width:${Math.min(p,100)}%;background:${cor};"></div>
@@ -768,7 +775,7 @@ h2 {
                 <div class="footer">
                     <div class="valorTexto">
                         ${moeda(valorNum)}
-                        <span class="parcela-tag">Mês ${parcelaAtual} de ${g.vezes}x (Restam ${g.vezes - parcelaAtual})</span>
+                        <span class="parcela-tag">Mês ${parcelaAtual} de ${vezesNum}x (Restam ${vezesNum - parcelaAtual})</span>
                     </div>
                     <button class="excluir" onclick="remover(${i})">Excluir</button>
                 </div>
@@ -789,7 +796,7 @@ h2 {
             if (campo) {
                 campo.focus();
                 if (selStart !== null && campo.setSelectionRange) {
-                    try { campo.setSelectionRange(selStart,selEnd); } catch(e){}
+                    try { campo.setSelectionRange(selStart, selEnd); } catch(e){}
                 }
             }
         }
@@ -818,14 +825,14 @@ h2 {
     };
 
     window.alterarNome = function(i, v) { dados.gastos[i].nome = v; salvarNuvem(); };
-    window.alterarValor = function(i, v) { dados.gastos[i].valor = converterParaNumero(v); salvarNuvem(); };
-    window.alterarVezes = function(i, v) { dados.gastos[i].vezes = parseInt(v) || 1; salvarNuvem(); };
+    window.alterarValor = function(i, v) { dados.gastos[i].valor = v; salvarNuvem(); };
+    window.alterarVezes = function(i, v) { dados.gastos[i].vezes = v; salvarNuvem(); };
     window.remover = function(i) { dados.gastos.splice(i, 1); salvarNuvem(); };
 
     window.novo = function() {
         dados.gastos.push({
             nome: "📝 Novo gasto",
-            valor: 0,
+            valor: "0",
             vezes: 1,
             startAno: anoAtual,
             startMes: mesAtual,
