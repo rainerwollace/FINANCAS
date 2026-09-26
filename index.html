@@ -47,6 +47,10 @@ body {
     border-radius: 20px;
 }
 
+.status-nuvem.erro {
+    background: rgba(231, 76, 60, 0.35);
+}
+
 .backup-actions {
     position: absolute;
     top: 25px;
@@ -388,7 +392,7 @@ h2 {
             <h1>💰 Controle Financeiro</h1>
             <div class="status-nuvem" id="statusNuvem">⏳ Conectando...</div>
         </div>
-        
+
         <div class="backup-actions">
             <button class="btn-backup" onclick="exportarDados()">📤 Exportar</button>
             <button class="btn-backup" onclick="document.getElementById('importFile').click()">📥 Importar</button>
@@ -474,6 +478,7 @@ h2 {
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
     import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
+    // Mesma configuração e mesmo path do banco original — nenhum dado existente é perdido.
     const firebaseConfig = {
         apiKey: "AIzaSyAvYi8dqXHfQaiBYOTyJB_5zcdrfIwtmr4",
         authDomain: "meu-controle-financeiro-73572.firebaseapp.com",
@@ -486,20 +491,40 @@ h2 {
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    const dbRef = ref(db, 'rainerwollace'); 
+    const dbRef = ref(db, 'rainerwollace');
 
     let dataBase = new Date();
     let anoAtual = dataBase.getFullYear();
     let mesAtual = dataBase.getMonth();
     let meuGrafico = null;
-    
+
     let dados = {
-        salarios: {}, 
+        salarios: {},
         gastos: []
     };
 
     const salarioInput = document.getElementById("salario");
+    const statusEl = document.getElementById("statusNuvem");
     let primeiraCargaFeita = false;
+
+    // ---- Escape de HTML (corrige o risco de XSS ao renderizar nome/valor) ----
+    function escapeHTML(str) {
+        return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    // ---- Debounce genérico (reduz escritas no Firebase a cada tecla) ----
+    function debounce(fn, delay) {
+        let timeoutId;
+        return function(...args) {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => fn.apply(this, args), delay);
+        };
+    }
 
     onValue(dbRef, (snapshot) => {
         const val = snapshot.val();
@@ -508,23 +533,43 @@ h2 {
             if (!dados.gastos) dados.gastos = [];
             if (!dados.salarios) dados.salarios = {};
         } else if (!primeiraCargaFeita) {
-            set(dbRef, dados);
+            set(dbRef, dados).catch(mostrarErroSalvar);
         }
-        
+
         primeiraCargaFeita = true;
-        document.getElementById("statusNuvem").innerText = "☁️ Sincronizado";
+        statusEl.classList.remove("erro");
+        statusEl.innerText = "☁️ Sincronizado";
         atualizar();
+    }, (erro) => {
+        // onValue também pode falhar (regra de permissão, rede, etc.)
+        statusEl.classList.add("erro");
+        statusEl.innerText = "⚠️ Erro ao conectar";
+        console.error("Erro ao ler do Firebase:", erro);
     });
 
-    function salvarNuvem() {
-        document.getElementById("statusNuvem").innerText = "🔄 Salvando...";
-        definirSalarioMes(parseFloat(salarioInput.value) || 0);
-        set(dbRef, dados).then(() => {
-            document.getElementById("statusNuvem").innerText = "☁️ Sincronizado";
-        });
+    function mostrarErroSalvar(erro) {
+        statusEl.classList.add("erro");
+        statusEl.innerText = "⚠️ Falha ao salvar";
+        console.error("Erro ao salvar no Firebase:", erro);
     }
 
-    salarioInput.addEventListener('input', salvarNuvem);
+    function salvarNuvemImediato() {
+        statusEl.classList.remove("erro");
+        statusEl.innerText = "🔄 Salvando...";
+        definirSalarioMes(parseFloat(salarioInput.value) || 0);
+        set(dbRef, dados).then(() => {
+            statusEl.classList.remove("erro");
+            statusEl.innerText = "☁️ Sincronizado";
+        }).catch(mostrarErroSalvar);
+    }
+
+    // Só escreve no banco 500ms depois da última alteração
+    const salvarNuvem = debounce(salvarNuvemImediato, 500);
+
+    salarioInput.addEventListener('input', () => {
+        statusEl.innerText = "✏️ Editando...";
+        salvarNuvem();
+    });
 
     function obterSalarioMes() {
         let chave = `${anoAtual}-${mesAtual}`;
@@ -682,7 +727,7 @@ h2 {
     };
 
     window.atualizarStatsGerais = function() {
-        let dadosGrafico = obterLinhaDoTempo(""); 
+        let dadosGrafico = obterLinhaDoTempo("");
         let totalReceita = dadosGrafico.datasetSalario.reduce((a, b) => a + b, 0);
         let totalGasto = dadosGrafico.datasetGasto.reduce((a, b) => a + b, 0);
         let saldoGeral = totalReceita - totalGasto;
@@ -694,7 +739,7 @@ h2 {
     };
 
     function atualizar() {
-        if (!primeiraCargaFeita) return; 
+        if (!primeiraCargaFeita) return;
 
         const mesesNome = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
         document.getElementById("mesAtualLabel").innerText = `${mesesNome[mesAtual]} de ${anoAtual}`;
@@ -706,7 +751,7 @@ h2 {
         let lista = document.getElementById("lista");
         let focoIndex = null, focoCampo = null, selStart = null, selEnd = null;
         let ativo = document.activeElement;
-        
+
         if (ativo && ativo.dataset && ativo.dataset.index !== undefined) {
             focoIndex = ativo.dataset.index;
             focoCampo = ativo.dataset.campo;
@@ -729,7 +774,7 @@ h2 {
             let mesesPassados = calcularDiferencaMeses(anoAtual, mesAtual, g.startAno, g.startMes);
             let parcelaAtual = mesesPassados + 1;
 
-            if (mesesPassados < 0 || parcelaAtual > vezesNum) return; 
+            if (mesesPassados < 0 || parcelaAtual > vezesNum) return;
 
             if (filtroMensal && !g.nome.toLowerCase().includes(filtroMensal)) return;
 
@@ -737,7 +782,7 @@ h2 {
             totalGasto += valorNum;
 
             let isPago = (g.pagos && typeof g.pagos === 'object' && g.pagos[chaveMesAtual]) ? true : false;
-            
+
             if (isPago) {
                 totalPago += valorNum;
             } else {
@@ -755,6 +800,7 @@ h2 {
             let valorExibicao = (g.valor !== undefined && g.valor !== null) ? g.valor : "";
             let vezesExibicao = (g.vezes !== undefined && g.vezes !== null) ? g.vezes : 1;
 
+            // Nome/valor/vezes passam por escapeHTML antes de virar atributo, evitando quebra de HTML / XSS
             lista.innerHTML += `
             <div class="gasto ${classePago}">
                 <div class="topo">
@@ -762,12 +808,12 @@ h2 {
                         <input type="checkbox" onchange="marcarPago(${i}, this.checked)" ${isPago ? 'checked' : ''}>
                         Pago
                     </label>
-                    <input class="nome" data-index="${i}" data-campo="nome" value="${g.nome}" oninput="alterarNome(${i},this.value)">
+                    <input class="nome" data-index="${i}" data-campo="nome" value="${escapeHTML(g.nome)}" oninput="alterarNome(${i},this.value)">
                     <div class="porcentagem">${p.toFixed(1)}%</div>
                 </div>
                 <div class="inputs-gasto">
-                    <input class="valorInput" data-index="${i}" data-campo="valor" type="text" inputmode="decimal" placeholder="Valor R$" value="${valorExibicao}" oninput="alterarValor(${i},this.value)">
-                    <input class="vezesInput" data-index="${i}" data-campo="vezes" type="text" inputmode="numeric" placeholder="Repetições (x)" value="${vezesExibicao}" oninput="alterarVezes(${i},this.value)">
+                    <input class="valorInput" data-index="${i}" data-campo="valor" type="text" inputmode="decimal" placeholder="Valor R$" value="${escapeHTML(valorExibicao)}" oninput="alterarValor(${i},this.value)">
+                    <input class="vezesInput" data-index="${i}" data-campo="vezes" type="text" inputmode="numeric" placeholder="Repetições (x)" value="${escapeHTML(vezesExibicao)}" oninput="alterarVezes(${i},this.value)">
                 </div>
                 <div class="barra">
                     <div class="preenchimento" style="width:${Math.min(p,100)}%;background:${cor};"></div>
@@ -813,7 +859,7 @@ h2 {
         }
         let chaveMesAtual = `${anoAtual}-${mesAtual}`;
         dados.gastos[i].pagos[chaveMesAtual] = checked;
-        salvarNuvem();
+        salvarNuvemImediato(); // marcar como pago é uma ação pontual, salva na hora
         atualizar();
     };
 
@@ -824,10 +870,13 @@ h2 {
         atualizar();
     };
 
+    // Edições de texto usam a versão com debounce (evita 1 escrita por tecla)
     window.alterarNome = function(i, v) { dados.gastos[i].nome = v; salvarNuvem(); };
     window.alterarValor = function(i, v) { dados.gastos[i].valor = v; salvarNuvem(); };
     window.alterarVezes = function(i, v) { dados.gastos[i].vezes = v; salvarNuvem(); };
-    window.remover = function(i) { dados.gastos.splice(i, 1); salvarNuvem(); };
+
+    // Excluir e criar novo item são ações pontuais, salvam na hora
+    window.remover = function(i) { dados.gastos.splice(i, 1); salvarNuvemImediato(); };
 
     window.novo = function() {
         dados.gastos.push({
@@ -838,7 +887,7 @@ h2 {
             startMes: mesAtual,
             pagos: {}
         });
-        salvarNuvem();
+        salvarNuvemImediato();
     };
 
     window.exportarDados = function() {
@@ -854,14 +903,14 @@ h2 {
     window.importarDados = function(input) {
         let file = input.files[0];
         if (!file) return;
-        
+
         let reader = new FileReader();
         reader.onload = function(e) {
             try {
                 let dadosImportados = JSON.parse(e.target.result);
                 if (dadosImportados.gastos && dadosImportados.salarios) {
                     dados = dadosImportados;
-                    salvarNuvem();
+                    salvarNuvemImediato();
                     alert("Backup restaurado e sincronizado com a nuvem com sucesso!");
                 } else {
                     alert("Arquivo inválido. O formato dos dados não é compatível.");
@@ -871,7 +920,7 @@ h2 {
             }
         };
         reader.readAsText(file);
-        input.value = ''; 
+        input.value = '';
     };
 </script>
 </body>
